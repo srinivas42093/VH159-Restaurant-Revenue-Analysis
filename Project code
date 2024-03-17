@@ -1,0 +1,66 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
+df = pd.read_csv("/content/restaurant_data.csv")
+df
+df['Date'] = pd.to_datetime(df['Date'])
+df['Year'] = df['Date'].dt.year
+df['Month'] = df['Date'].dt.month
+df['Day'] = df['Date'].dt.day
+df['ReservationHour'] = df['ReservationTime'].apply(lambda x: int(x.split(':')[0]))
+df['ReservationMinute'] = df['ReservationTime'].apply(lambda x: int(x.split(':')[1]))
+df = df.drop(columns=['Date', 'ReservationTime'])
+X = df.drop(columns=['Feedback', 'MenuItem', 'Category', 'WaitStaff', 'TableSize']) 
+y = df['Feedback']
+categorical_columns = ['PaymentMethod', 'Weather', 'SpecialEvent', 'CustomerGender']
+for col in categorical_columns:
+ one_hot_encoder = pd.get_dummies(X[col], prefix=col)
+ X = pd.concat([X, one_hot_encoder], axis=1)
+ X.drop(columns=[col], inplace=True)
+ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+ categorical_columns = [col for col in X.columns if col.strip() == 'PaymentMethod']
+ logistic_model = LogisticRegression()
+logistic_model.fit(X_train, y_train)
+y_pred = logistic_model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+classification_report_output = classification_report(y_test, y_pred)
+print(f"Accuracy: {accuracy}")
+print("Classification Report:\n", classification_report_output)
+knn_model = KNeighborsClassifier(n_neighbors=5) 
+knn_model.fit(X_train, y_train)
+knn_predictions = knn_model.predict(X_test)
+knn_accuracy = accuracy_score(y_test, knn_predictions)
+knn_classification_report = classification_report(y_test, knn_predictions)
+print("K-Nearest Neighbors Classifier:")
+print(f"Accuracy: {knn_accuracy}")
+print("Classification Report:\n", knn_classification_report)
+rf_model = RandomForestClassifier(n_estimators=100, random_state=42) # You can adjust th
+rf_model.fit(X_train, y_train)
+rf_predictions = rf_model.predict(X_test)
+rf_accuracy = accuracy_score(y_test, rf_predictions)
+rf_classification_report = classification_report(y_test, rf_predictions)
+print("Random Forest Classifier:")
+print(f"Accuracy: {rf_accuracy}")
+print("Classification Report:\n", rf_classification_report)
+dt_model = DecisionTreeClassifier(random_state=42)
+dt_model.fit(X_train, y_train)
+dt_predictions = dt_model.predict(X_test)
+dt_accuracy = accuracy_score(y_test, dt_predictions)
+dt_classification_report = classification_report(y_test, dt_predictions)
+print("Decision Tree Classifier:")
+print(f"Accuracy: {dt_accuracy}")
+print("Classification Report:\n", dt_classification_report)
+import matplotlib.pyplot as plt
+classifiers = ["K-Nearest Neighbors", "Random Forest", "Decision Tree"]
+accuracies = [knn_accuracy, rf_accuracy, dt_accuracy]
+plt.bar(classifiers, accuracies, color='blue')
+plt.xlabel("Classifier")
+plt.ylabel("Accuracy")
+plt.title("Classifier Accuracy Comparison")
+plt.ylim(0.0, 1.0) 
+plt.xticks(rotation=45) 
